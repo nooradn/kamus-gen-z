@@ -54,7 +54,8 @@ Website interaktif dan modern yang merangkum kosa kata slang populer Gen Z Indon
 
 ## 🛠️ Tech Stack
 
-- **Astro 5** (Static Site Generator & Islands Architecture)
+- **Astro 5** (Server / Hybrid Architecture)
+- **Turso (libSQL / SQLite on the Edge)** (Cloud Database untuk live likes & submissions)
 - **React 19** (`@astrojs/react`)
 - **Tailwind CSS v4** (dengan `@custom-variant dark`)
 - **Lucide React** (Modern Iconography)
@@ -69,13 +70,17 @@ Website interaktif dan modern yang merangkum kosa kata slang populer Gen Z Indon
 # Masuk ke direktori
 cd /home/agent/.gemini/antigravity-cli/scratch/kamus-gen-z
 
+# Salin env file & isi kredensial Turso
+cp .env.example .env
+
+# Jalankan database seeding (mengimpor 80+ kata awal ke Turso)
+node scripts/seed-turso.mjs
+
 # Jalankan server pengembangan
 npm run dev
 
-# Build produksi
+# Atau build & jalankan server produksi
 npm run build
-
-# Preview build produksi
-npm run preview
+npm run start
 ```
 Server berjalan di `http://localhost:5173/`.

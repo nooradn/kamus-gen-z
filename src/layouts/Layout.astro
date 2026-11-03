@@ -1,0 +1,47 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = "Kamus Gen Z Indonesia - Bahasa Gaul & Slang Populer",
+  description = "Kamus bahasa gaul & slang Gen Z Indonesia, anak Jaksel, TikTok, Twitter, percintaan, dan istilah tongkrongan viral terkini. Dibuat for fun & hiburan santai!"
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔥</text></svg>" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,700&family=Space+Grotesk:wght@500;700;900&display=swap" rel="stylesheet">
+
+    <!-- Anti-flicker Theme Script (Defaults to Light) -->
+    <script is:inline>
+      const theme = (() => {
+        if (typeof localStorage !== 'undefined' && localStorage.getItem('kamus_genz_theme')) {
+          return localStorage.getItem('kamus_genz_theme');
+        }
+        return 'light';
+      })();
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    </script>
+  </head>
+  <body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-['Plus_Jakarta_Sans',sans-serif] min-h-screen antialiased selection:bg-pink-500 selection:text-white transition-colors duration-200">
+    <slot />
+  </body>
+</html>

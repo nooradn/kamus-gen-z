@@ -16,9 +16,7 @@ const CATEGORY_NAMES = {
   brainrot: { label: 'Brainrot', icon: '👾' },
 };
 
-export default function SlangCard({ slang, isBookmarked, onToggleBookmark, onTagClick, onShowToast }) {
-  const [likes, setLikes] = useState(slang.likes || 0);
-  const [hasLiked, setHasLiked] = useState(false);
+export default function SlangCard({ slang, isBookmarked, isLiked, onToggleBookmark, onToggleLike, onTagClick, onShowToast }) {
   const [isCopied, setIsCopied] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
 
@@ -26,13 +24,8 @@ export default function SlangCard({ slang, isBookmarked, onToggleBookmark, onTag
   const categoryInfo = CATEGORY_NAMES[slang.category] || { label: slang.category, icon: '✨' };
 
   const handleLike = () => {
-    if (hasLiked) {
-      setLikes(prev => prev - 1);
-      setHasLiked(false);
-    } else {
-      setLikes(prev => prev + 1);
-      setHasLiked(true);
-      if (onShowToast) onShowToast(`Menyala! Kamu menyukai "${slang.term}" 🔥`);
+    if (onToggleLike) {
+      onToggleLike(slang.id);
     }
   };
 
@@ -190,13 +183,14 @@ export default function SlangCard({ slang, isBookmarked, onToggleBookmark, onTag
         <button
           onClick={handleLike}
           className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all active:scale-95 ${
-            hasLiked
+            isLiked
               ? 'text-pink-600 dark:text-pink-400 bg-pink-500/10 font-bold'
               : 'hover:text-pink-600 dark:hover:text-pink-400 hover:bg-slate-100 dark:hover:bg-slate-800/60'
           }`}
+          title={isLiked ? 'Batal suka' : 'Suka kata ini'}
         >
-          <Heart className={`w-3.5 h-3.5 ${hasLiked ? 'fill-current text-pink-500' : ''}`} />
-          <span>{likes}</span>
+          <Heart className={`w-3.5 h-3.5 ${isLiked ? 'fill-current text-pink-500' : ''}`} />
+          <span>{slang.likes || 0}</span>
         </button>
 
         <button

@@ -50,6 +50,19 @@ export default function App() {
     return ['menyala-abangkuh', 'which-is', 'cegil'];
   });
 
+  const [clientId] = useState(() => {
+    if (typeof window !== 'undefined') {
+      let cid = localStorage.getItem('kamus_genz_client_id');
+      if (!cid) {
+        cid = 'c_' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
+        localStorage.setItem('kamus_genz_client_id', cid);
+      }
+      return cid;
+    }
+    return 'anonymous';
+  });
+
+  const [likedWordIds, setLikedWordIds] = useState([]);
   const [activeTab, setActiveTab] = useState('dictionary'); // 'dictionary' | 'translator' | 'quiz' | 'bookmarks'
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedLevel, setSelectedLevel] = useState('all');
@@ -92,6 +105,37 @@ export default function App() {
     }
   }, [bookmarks]);
 
+  // Fetch live words and liked words from Turso database
+  useEffect(() => {
+    let isMounted = true;
+
+    // 1. Fetch live words from Turso
+    fetch('/api/words')
+      .then((res) => res.json())
+      .then((data) => {
+        if (isMounted && data.success && Array.isArray(data.data) && data.data.length > 0) {
+          setSlangList(data.data);
+        }
+      })
+      .catch((err) => console.warn('Turso API offline, using local fallback:', err));
+
+    // 2. Fetch user's liked words from Turso
+    if (clientId && clientId !== 'anonymous') {
+      fetch(`/api/like?clientId=${encodeURIComponent(clientId)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (isMounted && data.success && Array.isArray(data.likedWordIds)) {
+            setLikedWordIds(data.likedWordIds);
+          }
+        })
+        .catch((err) => console.warn('Could not fetch liked words:', err));
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [clientId]);
+
   const toggleTheme = () => {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
@@ -115,8 +159,54 @@ export default function App() {
     });
   };
 
-  const handleAddSlang = (newSlang) => {
+  // Toggle Like via Turso database
+  const handleToggleLike = async (wordId) => {
+    const alreadyLiked = likedWordIds.includes(wordId);
+
+    // Optimistic UI update
+    setLikedWordIds((prev) =>
+      alreadyLiked ? prev.filter((id) => id !== wordId) : [...prev, wordId]
+    );
+
+    setSlangList((prev) =>
+      prev.map((item) => {
+        if (item.id === wordId) {
+          const currentLikes = item.likes || 0;
+          return {
+            ...item,
+            likes: alreadyLiked ? Math.max(0, currentLikes - 1) : currentLikes + 1,
+          };
+        }
+        return item;
+      })
+    );
+
+    showToast(alreadyLiked ? 'Batal menyukai kata' : 'Menyala! Kamu menyukai kata ini 🔥');
+
+    try {
+      const res = await fetch('/api/like', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wordId, clientId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        // Sync exact count from Turso
+        setSlangList((prev) =>
+          prev.map((item) => (item.id === wordId ? { ...item, likes: data.likes } : item))
+        );
+      }
+    } catch (e) {
+      console.error('Failed to sync like with Turso:', e);
+    }
+  };
+
+  // Add new word into Turso database
+  const handleAddSlang = async (newSlang) => {
+    // 1. Optimistic update
     setSlangList((prev) => [newSlang, ...prev]);
+
+    // 2. Persist locally as fallback
     if (typeof window !== 'undefined') {
       try {
         const saved = localStorage.getItem('kamus_genz_custom');
@@ -125,6 +215,24 @@ export default function App() {
       } catch (e) {
         console.error(e);
       }
+    }
+
+    // 3. Persist to Turso Cloud Database
+    try {
+      const res = await fetch('/api/words', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newSlang),
+      });
+      const data = await res.json();
+      if (data.success && data.data) {
+        // Replace temporary entry with confirmed Turso record
+        setSlangList((prev) =>
+          prev.map((item) => (item.id === newSlang.id ? data.data : item))
+        );
+      }
+    } catch (e) {
+      console.error('Failed to save word to Turso:', e);
     }
   };
 
@@ -371,7 +479,9 @@ export default function App() {
                     key={slang.id}
                     slang={slang}
                     isBookmarked={bookmarks.includes(slang.id)}
+                    isLiked={likedWordIds.includes(slang.id)}
                     onToggleBookmark={handleToggleBookmark}
+                    onToggleLike={handleToggleLike}
                     onTagClick={handleTagClick}
                     onShowToast={showToast}
                   />

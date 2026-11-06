@@ -9,6 +9,7 @@
     "preview": "astro preview --host 0.0.0.0 --port 5173"
   },
   "dependencies": {
+    "@astrojs/cloudflare": "^12.6.13",
     "@astrojs/node": "^9.5.5",
     "@astrojs/react": "^4.2.1",
     "@libsql/client": "^0.18.0",
